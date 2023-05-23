@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import linprog
 import pandas as pd
 
-def make_groups(data_df, x_c):
+def make_groups(data_df):
     # x_c is the number of extra columns for any necessary processing
     x_c = 1
 
