@@ -1,12 +1,14 @@
 from joao_model import make_groups
 import pandas as pd
 
-n_projects = 6
-n_students = 9
+
 x_c = 1
 
 data_df = pd.read_csv('selections_pitch.csv')
-data = data_df.to_numpy()[:,1:-1].reshape([n_students*n_projects])
+data_array = data_df.to_numpy()[:,1:-1]
+n_projects = data_array.shape[1]
+n_students = data_array.shape[0]
+data = data_array.reshape([n_students*n_projects])
 
 res = make_groups(data, n_projects, n_students, x_c)
 
