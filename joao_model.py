@@ -38,7 +38,7 @@ def make_groups(data, n_projects, n_students, x_c):
     b_ub = np.concatenate([b_ub,[1]*n_projects])
 
 
-    # select project totals match selections
+    # selected project totals match selections
     temp = np.zeros([n_projects,col])
     for i in range(n_projects):
         for j in range(n_students):
@@ -46,6 +46,9 @@ def make_groups(data, n_projects, n_students, x_c):
         temp[i,col-x_c-n_projects+i] = -3
     A = np.concatenate([A, temp])
     b = np.concatenate([b,[0]*n_projects])
+
+    # pitcher is in project if it gets picked
+    temp = np.zeros([1, col])
 
     # minimax pref
     temp = np.zeros([n_students*n_projects,col])
