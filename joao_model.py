@@ -3,7 +3,9 @@ from scipy.optimize import linprog
 import pandas as pd
 
 
-def make_groups(data, n_projects, n_students, x_c=1):
+def make_groups(data, n_projects, n_students, x_c):
+
+    # x_c is the number of extra columns for any necessary processing
 
     col = (n_students+1)*n_projects+x_c
 
