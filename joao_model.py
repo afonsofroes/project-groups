@@ -2,11 +2,16 @@
 from math import ceil
 import numpy as np
 from scipy.optimize import linprog
+import pandas as pd
 
-
-def make_groups(data, n_projects, n_students, x_c):
+def make_groups(data_df, x_c):
     # x_c is the number of extra columns for any necessary processing
     x_c = 1
+
+    data_array = data_df.to_numpy()[:, 1:-1]
+    n_projects = data_array.shape[1]
+    n_students = data_array.shape[0]
+    data = data_array.reshape([n_students * n_projects])
 
     min_projects = ceil(n_students / 4)
 
@@ -113,4 +118,8 @@ def make_groups(data, n_projects, n_students, x_c):
     print("\nChosen Projects: ")
     print(res.x[-n_projects - x_c : -x_c])
 
-    return res
+    res_df = pd.DataFrame(
+        (res.x[: -n_projects - x_c] * data).reshape([n_students, n_projects]).astype(int)
+    )
+
+    return res_df
