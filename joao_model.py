@@ -6,6 +6,7 @@ import pandas as pd
 
 
 def make_groups(data_df):
+    """Make groups based on preferences"""
     # x_c is the number of extra columns for any necessary processing
     x_c = 1
 
