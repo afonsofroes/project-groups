@@ -1,5 +1,5 @@
 """Display the results from Joao's model in a nice way"""
-from joao_model import make_groups
+from model import make_groups
 import pandas as pd
 
 
