@@ -72,7 +72,7 @@ def make_groups(data_df):
     temp = np.zeros([len(pitch_dict), col])
     for i, (student_i, proj) in enumerate(pitch_dict.items()):
         temp[i, student_i * n_projects + proj] = 1
-        temp[i, -n_projects + proj - 1] = -1
+        temp[i, -n_projects + proj - x_c] = -1
     print(temp)
     print(pitch_dict)
     A = np.concatenate([A, temp])
