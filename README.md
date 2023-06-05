@@ -1,6 +1,7 @@
 ### Setup
 
 Minimum python version: 3.8
+
 Tested up to 3.11
 
 ```
