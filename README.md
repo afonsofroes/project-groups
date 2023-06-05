@@ -1,3 +1,14 @@
+### Setup
+
+Minimum python version: 3.8
+Tested up to 3.11
+
+```
+pip install -r requirements.txt
+```
+
+### Usage
+
 Model is ran through the group_displayer.py file. The file is ran through the command line with the following command:
 ```
 python group_displayer.py
