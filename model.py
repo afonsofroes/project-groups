@@ -78,6 +78,18 @@ def make_groups(data_df):
     A = np.concatenate([A, temp])
     b = np.concatenate([b, [0] * len(pitch_dict)])
 
+    # if 2 students have the same number in the lockout column, they must not be in the same group
+    lockout_dict = {}
+    for i, lockout in data_df[["lockout"]].itertuples():
+        if lockout.is_integer():
+            lockout_dict[i] = int(lockout)
+    temp = np.zeros([len(lockout_dict), col])
+    for i, (student_i, lockout) in enumerate(lockout_dict.items()):
+        temp[i, student_i * n_projects + lockout] = 1
+        temp[i, -1] = -1
+    A = np.concatenate([A, temp])
+    b = np.concatenate([b, [0] * len(lockout_dict)])
+
     # minimax
     temp = np.zeros([n_students * n_projects, col])
     for i in range(n_students):
