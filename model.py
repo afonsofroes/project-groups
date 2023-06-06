@@ -10,7 +10,8 @@ def make_groups(data_df):
     # x_c is the number of extra columns for any necessary processing
     x_c = 1
 
-    data_array = data_df.to_numpy()[:, 1:-1]
+    data_array = data_df.to_numpy()[:, 1:-2]
+    print(data_array)
     n_projects = data_array.shape[1]
     n_students = data_array.shape[0]
     data = data_array.reshape([n_students * n_projects])
@@ -72,23 +73,24 @@ def make_groups(data_df):
     temp = np.zeros([len(pitch_dict), col])
     for i, (student_i, proj) in enumerate(pitch_dict.items()):
         temp[i, student_i * n_projects + proj] = 1
-        temp[i, -n_projects + proj - 1] = -1
-    print(temp)
-    print(pitch_dict)
+        temp[i, proj - n_projects - x_c] = -1
     A = np.concatenate([A, temp])
     b = np.concatenate([b, [0] * len(pitch_dict)])
 
-    #if 2 people have the same number in the lockout column, they can't be in the same group
-    lockout_dict = {}
-    for i, lockout in data_df[["lockout"]].itertuples():
-        if lockout.is_integer():
-            lockout_dict[i] = int(lockout)
-    temp = np.zeros([len(lockout_dict), col])
-    for i, (student_i, lockout) in enumerate(lockout_dict.items()):
-        temp[i, student_i * n_projects + lockout] = 1
-        temp[i, -n_projects - x_c] = -1
-    A = np.concatenate([A, temp])
-    b = np.concatenate([b, [0] * len(lockout_dict)])
+    # if 2 people have the same number in the lockout column, they can't be in the same group
+    locked_pairs = [
+        tuple(data_df[data_df["lockout"] == lockout].index)
+        for lockout in data_df["lockout"].unique()
+        if lockout.is_integer()
+    ]
+    temp = np.zeros([len(locked_pairs) * n_projects, col])
+    for i, (student_1, student_2) in enumerate(locked_pairs):
+        for j in range(n_projects):
+            temp[i * n_projects + j, student_1 * n_projects + j] = 1
+            temp[i * n_projects + j, student_2 * n_projects + j] = 1
+    print(temp)
+    A_ub = np.concatenate([A_ub, temp])
+    b_ub = np.concatenate([b_ub, [1] * len(locked_pairs) * n_projects])
 
     # minimax
     temp = np.zeros([n_students * n_projects, col])
