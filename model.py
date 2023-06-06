@@ -14,6 +14,7 @@ def make_groups(data_df):
     n_projects = data_array.shape[1]
     n_students = data_array.shape[0]
     data = data_array.reshape([n_students * n_projects])
+    print(n_projects)
 
     min_projects = ceil(n_students / 4)
 
@@ -47,27 +48,31 @@ def make_groups(data_df):
     A_ub = np.concatenate([A_ub, temp])
     b_ub = np.concatenate([b_ub, [1] * n_projects])
 
+
     # selected project totals match selections
+    max_size=4
+    min_size=3
     temp = np.zeros([n_projects, col])
     for i in range(n_projects):
         for j in range(n_students):
             temp[i, j * n_projects + i] = -1
-        temp[i, col - x_c - n_projects + i] = 4
+        temp[i, col - x_c - n_projects + i] = max_size
     A_ub = np.concatenate([A_ub, temp])
-    b_ub = np.concatenate([b_ub, [1] * n_projects])
+    b_ub = np.concatenate([b_ub, [max_size-min_size] * n_projects])
 
     temp = np.zeros([n_projects, col])
     for i in range(n_projects):
         for j in range(n_students):
             temp[i, j * n_projects + i] = 1
-        temp[i, col - x_c - n_projects + i] = -4
+        temp[i, col - x_c - n_projects + i] = -max_size
     A_ub = np.concatenate([A_ub, temp])
     b_ub = np.concatenate([b_ub, [0] * n_projects])
 
     # if a pitched project is selected, the pitcher must be in the group
     pitch_dict = {}
     for i, proj in data_df[["pitched"]].itertuples():
-        if proj.is_integer():
+        print(i,proj)
+        if not type(proj)==int and proj.is_integer():
             pitch_dict[i] = int(proj)
     temp = np.zeros([len(pitch_dict), col])
     for i, (student_i, proj) in enumerate(pitch_dict.items()):
@@ -89,7 +94,15 @@ def make_groups(data_df):
     c = np.zeros(col)
     c[col - x_c] = 1
 
-    result = linprog(c, A_eq=A, b_eq=b, A_ub=A_ub, b_ub=b_ub, integrality=1)
+    try:
+        result = linprog(c, A_eq=A, b_eq=b, A_ub=A_ub, b_ub=b_ub, integrality=1)
+    except ValueError:
+        raise ("Make sure you have the correct version of scipy")
+
+    if not result.fun:
+        raise Exception("No possible solution for current data. "+
+                        "Check input data or reduce constraints")
+
 
     print(
         "Optimal Value: ",
