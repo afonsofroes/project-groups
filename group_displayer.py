@@ -9,7 +9,7 @@ res_df = make_groups(data_df)
 
 students_df = data_df["student"]
 res_df = pd.concat([students_df, res_df], axis=1)
-res_df.columns = data_df.drop(columns=["pitched"]).columns
+res_df.columns = data_df.drop(columns=["pitched", "lockout"]).columns
 res_df.set_index("student", inplace=True)
 
 display_df = res_df[res_df != 0].stack().reset_index()
