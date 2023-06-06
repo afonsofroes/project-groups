@@ -1,5 +1,5 @@
 run:
-	@python group_displayer.py
+	@python make_groups.py
 
 install:
 	@pip install -U pip
