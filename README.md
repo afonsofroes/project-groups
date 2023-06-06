@@ -4,13 +4,24 @@ Minimum python version: 3.8
 
 Tested up to 3.11
 
+Install dependencies by running the following command
+
+```
+make install
+```
+OR
+
 ```
 pip install -r requirements.txt
 ```
 
 ### Usage
 
-Model is ran through the group_displayer.py file. The file is ran through the command line with the following command:
+Model is ran through the group_displayer.py file. The file is ran through the command line with the following command while in the project directory:
+```
+make
+```
+OR
 ```
 python group_displayer.py
 ```
