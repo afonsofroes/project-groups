@@ -5,24 +5,25 @@ from scipy.optimize import linprog
 import pandas as pd
 
 
-def make_groups(data_df):
+def make_groups(data_df, max_size=4, min_size=3):
     """Make groups based on preferences"""
     # x_c is the number of extra columns for any necessary processing
     x_c = 1
 
     data_array = data_df.to_numpy()[:, 1:-2]
-    print(data_array)
     n_projects = data_array.shape[1]
     n_students = data_array.shape[0]
-    data = data_array.reshape([n_students * n_projects])
-    print(n_projects)
+    data_flat = data_array.reshape([n_students * n_projects])
 
-    min_projects = ceil(n_students / 4)
+    min_projects = ceil(n_students / max_size)
 
     col = (n_students + 1) * n_projects + x_c
 
     A = np.zeros([n_students, col])
     b = np.zeros(n_students)
+
+    A_ub = np.zeros([n_projects, col])
+    b_ub = np.array([max_size] * n_projects)
 
     # 1 project per person
     for i in range(n_students):
@@ -30,8 +31,6 @@ def make_groups(data_df):
         b[i] = 1
 
     # max 4 people per project
-    A_ub = np.zeros([n_projects, col])
-    b_ub = np.array([4] * n_projects)
     for i in range(n_projects):
         for j in range(n_students):
             A_ub[i, j * n_projects + i] = 1
@@ -51,8 +50,6 @@ def make_groups(data_df):
 
 
     # selected project totals match selections
-    max_size=4
-    min_size=3
     temp = np.zeros([n_projects, col])
     for i in range(n_projects):
         for j in range(n_students):
@@ -72,7 +69,6 @@ def make_groups(data_df):
     # if a pitched project is selected, the pitcher must be in the group
     pitch_dict = {}
     for i, proj in data_df[["pitched"]].itertuples():
-        print(i,proj)
         if not type(proj)==int and proj.is_integer():
             pitch_dict[i] = int(proj)
     temp = np.zeros([len(pitch_dict), col])
@@ -94,7 +90,6 @@ def make_groups(data_df):
         for j in range(n_projects):
             temp[i * n_projects + j, student_1 * n_projects + j] = 1
             temp[i * n_projects + j, student_2 * n_projects + j] = 1
-    print(temp)
     A_ub = np.concatenate([A_ub, temp])
     b_ub = np.concatenate([b_ub, [1] * len(locked_pairs) * n_projects])
 
@@ -102,7 +97,7 @@ def make_groups(data_df):
     temp = np.zeros([n_students * n_projects, col])
     for i in range(n_students):
         for j in range(n_projects):
-            temp[i * n_projects + j, i * n_projects + j] = data[i * n_projects + j]
+            temp[i * n_projects + j, i * n_projects + j] = data_flat[i * n_projects + j]
             temp[i * n_projects + j, col - x_c] = -1
 
     A_ub = np.concatenate([A_ub, temp])
@@ -139,7 +134,7 @@ def make_groups(data_df):
     b_ub = np.concatenate([b_ub, [result.x[-1]]])
 
     # minimizing total pref
-    c = np.concatenate([data, [0] * (n_projects + 1)])
+    c = np.concatenate([data_flat, [0] * (n_projects + 1)])
     result = linprog(c, A_eq=A, b_eq=b, A_ub=A_ub, b_ub=b_ub, integrality=1)
 
     print(
@@ -155,7 +150,7 @@ def make_groups(data_df):
 
     print("Resultults: ")
     print(
-        (result.x[: -n_projects - x_c] * data)
+        (result.x[: -n_projects - x_c] * data_flat)
         .reshape([n_students, n_projects])
         .astype(int)
     )
@@ -164,7 +159,7 @@ def make_groups(data_df):
     print(result.x[-n_projects - x_c : -x_c])
 
     result_df = pd.DataFrame(
-        (result.x[: -n_projects - x_c] * data)
+        (result.x[: -n_projects - x_c] * data_flat)
         .reshape([n_students, n_projects])
         .astype(int)
     )
