@@ -1,5 +1,5 @@
 import pandas as pd
-from GroupMaker import GroupMaker
+from groupmaker import GroupMaker
 
 model = GroupMaker()
 
