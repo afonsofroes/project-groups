@@ -21,6 +21,10 @@ class GroupMaker:
         self.min_size = min_size
         self.x_c = x_c
         self.col = None
+        self.A = None
+        self.b = None
+        self.A_ub = None
+        self.b_ub = None
         if custom_constraints:
             self.constraints = []
         else:
@@ -40,6 +44,7 @@ class GroupMaker:
             ]
 
     def fit(self, data_df, verbose=False):
+        """Fit the model to the data"""
         if not self.constraints:
             raise Exception("No constraints defined")
 
@@ -60,20 +65,17 @@ class GroupMaker:
             objective(verbose=verbose)
 
     def __init_model__(self, **kwargs):
-        # 1 project per person
         self.A = np.zeros([self.n_students, self.col])
         self.b = np.zeros(self.n_students)
         for i in range(self.n_students):
             self.A[i, i * self.n_projects : (i + 1) * self.n_projects] = 1
             self.b[i] = 1
 
-        # project can only be selected once
+
         self.A_ub = np.zeros([self.n_projects, self.col])
         for i in range(self.n_projects):
             self.A_ub[i, self.col - self.x_c - self.n_projects + i] = 1
         self.b_ub = np.array([1] * self.n_projects)
-
-        # selected project total
 
     def __set_min_projects__(self):
         min_projects = ceil(self.n_students / self.max_size)
@@ -82,8 +84,6 @@ class GroupMaker:
         self.A_ub = np.concatenate([self.A_ub, temp])
         self.b_ub = np.concatenate([self.b_ub, [-min_projects]])
 
-        # selected project totals match selections
-
     def __set_group_size_range__(self):
         temp = np.zeros([self.n_projects, self.col])
         for i in range(self.n_projects):
@@ -91,9 +91,7 @@ class GroupMaker:
                 temp[i, j * self.n_projects + i] = -1
             temp[i, self.col - self.x_c - self.n_projects + i] = self.max_size
         self.A_ub = np.concatenate([self.A_ub, temp])
-        self.b_ub = np.concatenate(
-            [self.b_ub, [self.max_size - self.min_size] * self.n_projects]
-        )
+        self.b_ub = np.concatenate([self.b_ub, [self.max_size - self.min_size] * self.n_projects])
 
         temp = np.zeros([self.n_projects, self.col])
         for i in range(self.n_projects):
@@ -103,13 +101,16 @@ class GroupMaker:
         self.A_ub = np.concatenate([self.A_ub, temp])
         self.b_ub = np.concatenate([self.b_ub, [0] * self.n_projects])
 
-        # if a pitched project is selected, the pitcher must be in the group
 
     def __prioritise_pitchers_in_pitched_projects__(self):
         pitch_dict = {}
         for i, proj in self.data_df[["pitched"]].itertuples():
-            if not type(proj) == int and proj.is_integer():
-                pitch_dict[i] = int(proj)
+            try:
+                if not isinstance(proj, int) and proj.is_integer():
+                    pitch_dict[i] = int(proj)
+            except AttributeError:
+                raise Exception("Make sure your pitched column contains the index fot that student's pitched project and not the project name")
+
         temp = np.zeros([len(pitch_dict), self.col])
         for i, (student_i, proj) in enumerate(pitch_dict.items()):
             temp[i, student_i * self.n_projects + proj] = 1
@@ -161,8 +162,8 @@ class GroupMaker:
                 b_ub=self.b_ub,
                 integrality=1,
             )
-        except ValueError:
-            raise ("Make sure you have the correct version of scipy")
+        except ValueError as set_up_error:
+            raise Exception("Make sure you have the correct version of scipy") from set_up_error
 
         if not result.fun:
             raise Exception(
