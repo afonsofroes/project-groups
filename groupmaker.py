@@ -16,18 +16,18 @@ class GroupMaker:
             self.constraints = []
         else:
             self.constraints = [
-                self.__init_model__,
-                self.__set_min_projects__,
-                self.__set_group_size_range__,
-                self.__prioritise_pitchers_in_pitched_projects__,
-                self.__set_lockouts__
+                self._init_model,
+                self._set_min_projects,
+                self._set_group_size_range,
+                self._prioritise_pitchers_in_pitched_projects,
+                self._set_lockouts
             ]
 
         if custom_objective:
             self.objectives = []
         else:
             self.objectives = [
-                self.__objectives__,
+                self._objectives,
             ]
 
     def fit(self, data_df, verbose=False):
@@ -52,7 +52,7 @@ class GroupMaker:
             objective(verbose=verbose)
 
 
-    def __init_model__(self, **kwargs):
+    def _init_model(self, **kwargs):
         # 1 project per person
         self.A = np.zeros([self.n_students, self.col])
         self.b = np.zeros(self.n_students)
@@ -67,7 +67,7 @@ class GroupMaker:
         self.b_ub = np.array([1] * self.n_projects)
 
         # selected project total
-    def __set_min_projects__(self):
+    def _set_min_projects(self):
         min_projects = ceil(self.n_students / self.max_size)
         temp = np.zeros([1, self.col])
         temp[0, -self.n_projects - self.x_c : -self.x_c] = -1
@@ -76,7 +76,7 @@ class GroupMaker:
 
 
         # selected project totals match selections
-    def __set_group_size_range__(self):
+    def _set_group_size_range(self):
         temp = np.zeros([self.n_projects, self.col])
         for i in range(self.n_projects):
             for j in range(self.n_students):
@@ -94,7 +94,7 @@ class GroupMaker:
         self.b_ub = np.concatenate([self.b_ub, [0] * self.n_projects])
 
         # if a pitched project is selected, the pitcher must be in the group
-    def __prioritise_pitchers_in_pitched_projects__(self):
+    def _prioritise_pitchers_in_pitched_projects(self):
         pitch_dict = {}
         for i, proj in self.data_df[["pitched"]].itertuples():
             if not type(proj)==int and proj.is_integer():
@@ -107,8 +107,8 @@ class GroupMaker:
         self.A = np.concatenate([self.A, temp])
         self.b = np.concatenate([self.b, [0] * len(pitch_dict)])
 
-        # if 2 people have the same number in the lockout column, they can't be in the same group
-    def __set_lockouts__(self):
+    # if 2 people have the same number in the lockout column, they can't be in the same group
+    def _set_lockouts(self):
         locked_groups = [
             tuple(self.data_df[self.data_df["lockout"] == lockout].index)
             for lockout in self.data_df["lockout"].unique()
@@ -122,7 +122,7 @@ class GroupMaker:
         self.A_ub = np.concatenate([self.A_ub, temp])
         self.b_ub = np.concatenate([self.b_ub, [1] * len(locked_groups) * self.n_projects])
 
-    def __objectives__(self, **kwargs):
+    def _objectives(self, **kwargs):
 
         # minimax
         temp = np.zeros([self.n_students * self.n_projects, self.col])
