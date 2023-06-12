@@ -21,13 +21,9 @@ Model is ran through the group_displayer.py file. The file is ran through the co
 ```
 make
 ```
-"selections_pitch.csv" should be a file in the same directory as group_displayer.py. The file should contain a first column with the name of the students, and 1 column per project (see "selections_pitch.csv" example in the repository).
-
-The "pitched" column should come next, and it should contain the index of the project that the student pitched, i.e. Victoria pitched the "Sexual Health Clinics" project (7th project, 8th column overall), Victoria's pitched column should contain a 6 (for index 6 of the list of projects). If the student did not pitch a project, this field should be left empty.
 ## Data format
 "selections_pitch.csv" should be a file in the same directory as group_displayer.py. The file should contain a first column with the name of the students, and 1 column per project (see "selections_pitch.csv" example in the repository).
 
-The "lockout" column makes it so that people with the same lockout number cannot be in the same group. An empty field indicates this constraint will not be applied. In the example, Eitenne will never be in Victoria's group regardless of their preferences.
 The "pitched" column should come next (oenultimate column), and it should contain the index of the project that the student pitched, i.e. Victoria pitched the "Sexual Health Clinics" project (7th project, 8th column overall), Victoria's pitched column should contain a 6 (for index 6 of the list of projects). If the student did not pitch a project, this field should be left empty.
 
 The "lockout" column comes last. It makes it so that 2 people with the same lockout number cannot be in the same group. An empty field indicates this constraint will not be applied to the student. In the example, Eitenne will never be in Victoria's group regardless of their preferences, but everyone else has the possibility of working with any other student.
