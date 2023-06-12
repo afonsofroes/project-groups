@@ -33,4 +33,4 @@ The "pitched" column should come next (oenultimate column), and it should contai
 The "lockout" column comes last. It makes it so that 2 people with the same lockout number cannot be in the same group. An empty field indicates this constraint will not be applied to the student. In the example, Eitenne will never be in Victoria's group regardless of their preferences, but everyone else has the possibility of working with any other student.
 
 ## About the model
-The model will first minimize unhappiness by guaranteeing at least a 2nd choice for everyone, and then set this solution as a baseline and try to maximise 1st choices. It is assumed that pitchers will place their project as their 1st choice, and if their project is picked, they are guaranteed to be in the group for it.
+The model will first minimize unhappiness by trying to guarantee at least a 2nd choice for everyone, and then set this solution as a baseline and try to maximise 1st choices. It is assumed that pitchers will place their project as their 1st choice, and if their project is picked, they are guaranteed to be in the group for it.
