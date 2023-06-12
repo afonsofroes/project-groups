@@ -109,18 +109,18 @@ class GroupMaker:
 
         # if 2 people have the same number in the lockout column, they can't be in the same group
     def __set_lockouts__(self):
-        locked_pairs = [
+        locked_groups = [
             tuple(self.data_df[self.data_df["lockout"] == lockout].index)
             for lockout in self.data_df["lockout"].unique()
             if lockout.is_integer()
         ]
-        temp = np.zeros([len(locked_pairs) * self.n_projects, self.col])
-        for i, (student_1, student_2) in enumerate(locked_pairs):
+        temp = np.zeros([len(locked_groups) * self.n_projects, self.col])
+        for i, students in enumerate(locked_groups):
             for j in range(self.n_projects):
-                temp[i * self.n_projects + j, student_1 * self.n_projects + j] = 1
-                temp[i * self.n_projects + j, student_2 * self.n_projects + j] = 1
+                for student in students:
+                    temp[i * self.n_projects + j, student * self.n_projects + j] = 1
         self.A_ub = np.concatenate([self.A_ub, temp])
-        self.b_ub = np.concatenate([self.b_ub, [1] * len(locked_pairs) * self.n_projects])
+        self.b_ub = np.concatenate([self.b_ub, [1] * len(locked_groups) * self.n_projects])
 
     def __objectives__(self, **kwargs):
 
@@ -143,8 +143,8 @@ class GroupMaker:
             raise ("Make sure you have the correct version of scipy")
 
         if not result.fun:
-            raise Exception("No possible solution for current data. "+
-                            "Check input data or reduce constraints")
+            raise Exception("No possible solution for current data. \
+                            Check input data or reduce constraints")
 
         if kwargs.get("verbose"):
             print(
