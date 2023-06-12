@@ -3,9 +3,18 @@ from math import ceil
 import numpy as np
 from scipy.optimize import linprog
 
+
 class GroupMaker:
     """Make groups based on preferences and display them nicely"""
-    def __init__(self, max_size=4, min_size=3, x_c=1, custom_constraints=False, custom_objective=False):
+
+    def __init__(
+        self,
+        max_size=4,
+        min_size=3,
+        x_c=1,
+        custom_constraints=False,
+        custom_objective=False,
+    ):
         self.data_df = None
         self.result_df = pd.DataFrame()
         self.max_size = max_size
@@ -20,7 +29,7 @@ class GroupMaker:
                 self._set_min_projects,
                 self._set_group_size_range,
                 self._prioritise_pitchers_in_pitched_projects,
-                self._set_lockouts
+                self._set_lockouts,
             ]
 
         if custom_objective:
@@ -30,8 +39,8 @@ class GroupMaker:
                 self._objectives,
             ]
 
-    def fit(self, data_df, verbose=False):
-
+    def fit(self, data_df: pd.DataFrame, verbose=False):
+        """Fits the model to the data. Required for calculating the groups."""
         if not self.constraints:
             raise Exception("No constraints defined")
 
@@ -51,39 +60,39 @@ class GroupMaker:
         for objective in self.objectives:
             objective(verbose=verbose)
 
-
     def _init_model(self, **kwargs):
-        # 1 project per person
+        """Ensures each person can only do 1 project and that each project can \
+            only be chosen once."""
         self.A = np.zeros([self.n_students, self.col])
         self.b = np.zeros(self.n_students)
         for i in range(self.n_students):
             self.A[i, i * self.n_projects : (i + 1) * self.n_projects] = 1
             self.b[i] = 1
 
-        # project can only be selected once
         self.A_ub = np.zeros([self.n_projects, self.col])
         for i in range(self.n_projects):
             self.A_ub[i, self.col - self.x_c - self.n_projects + i] = 1
         self.b_ub = np.array([1] * self.n_projects)
 
-        # selected project total
     def _set_min_projects(self):
+        """Sets the minimum number of selected projects."""
         min_projects = ceil(self.n_students / self.max_size)
         temp = np.zeros([1, self.col])
         temp[0, -self.n_projects - self.x_c : -self.x_c] = -1
         self.A_ub = np.concatenate([self.A_ub, temp])
         self.b_ub = np.concatenate([self.b_ub, [-min_projects]])
 
-
-        # selected project totals match selections
     def _set_group_size_range(self):
+        """Ensures the number of people per project is within the set range."""
         temp = np.zeros([self.n_projects, self.col])
         for i in range(self.n_projects):
             for j in range(self.n_students):
                 temp[i, j * self.n_projects + i] = -1
             temp[i, self.col - self.x_c - self.n_projects + i] = self.max_size
         self.A_ub = np.concatenate([self.A_ub, temp])
-        self.b_ub = np.concatenate([self.b_ub, [self.max_size - self.min_size] * self.n_projects])
+        self.b_ub = np.concatenate(
+            [self.b_ub, [self.max_size - self.min_size] * self.n_projects]
+        )
 
         temp = np.zeros([self.n_projects, self.col])
         for i in range(self.n_projects):
@@ -93,11 +102,12 @@ class GroupMaker:
         self.A_ub = np.concatenate([self.A_ub, temp])
         self.b_ub = np.concatenate([self.b_ub, [0] * self.n_projects])
 
-        # if a pitched project is selected, the pitcher must be in the group
     def _prioritise_pitchers_in_pitched_projects(self):
+        """Makes it so that if a pitched project is selected, the pitcher must \
+              be in the group doing their project."""
         pitch_dict = {}
         for i, proj in self.data_df[["pitched"]].itertuples():
-            if not type(proj)==int and proj.is_integer():
+            if not type(proj) == int and proj.is_integer():
                 pitch_dict[i] = int(proj)
         temp = np.zeros([len(pitch_dict), self.col])
         for i, (student_i, proj) in enumerate(pitch_dict.items()):
@@ -107,28 +117,39 @@ class GroupMaker:
         self.A = np.concatenate([self.A, temp])
         self.b = np.concatenate([self.b, [0] * len(pitch_dict)])
 
-    # if 2 people have the same number in the lockout column, they can't be in the same group
+    def _create_locked_groups(self):
+        """Creates the locked_groups list needed for the _set_lockoud method."""
+        locked_groups = []
+        for lockout in self.data_df["lockout"].unique():
+            if lockout.is_integer():
+                locked_group = tuple(
+                    self.data_df[self.data_df["lockout"] == lockout].index
+                )
+                locked_groups.append(locked_group)
+        return locked_groups
+
     def _set_lockouts(self):
-        locked_groups = [
-            tuple(self.data_df[self.data_df["lockout"] == lockout].index)
-            for lockout in self.data_df["lockout"].unique()
-            if lockout.is_integer()
-        ]
+        """Makes it so that if 2 people have the same number in the lockout \
+            column, they can't be in the same group."""
+        locked_groups = self._create_locked_groups()
         temp = np.zeros([len(locked_groups) * self.n_projects, self.col])
         for i, students in enumerate(locked_groups):
             for j in range(self.n_projects):
                 for student in students:
                     temp[i * self.n_projects + j, student * self.n_projects + j] = 1
         self.A_ub = np.concatenate([self.A_ub, temp])
-        self.b_ub = np.concatenate([self.b_ub, [1] * len(locked_groups) * self.n_projects])
+        self.b_ub = np.concatenate(
+            [self.b_ub, [1] * len(locked_groups) * self.n_projects]
+        )
 
     def _objectives(self, **kwargs):
-
         # minimax
         temp = np.zeros([self.n_students * self.n_projects, self.col])
         for i in range(self.n_students):
             for j in range(self.n_projects):
-                temp[i * self.n_projects + j, i * self.n_projects + j] = self.data_flat[i * self.n_projects + j]
+                temp[i * self.n_projects + j, i * self.n_projects + j] = self.data_flat[
+                    i * self.n_projects + j
+                ]
                 temp[i * self.n_projects + j, self.col - self.x_c] = -1
 
         self.A_ub = np.concatenate([self.A_ub, temp])
@@ -138,13 +159,22 @@ class GroupMaker:
         self.c[self.col - self.x_c] = 1
 
         try:
-            result = linprog(self.c, A_eq=self.A, b_eq=self.b, A_ub=self.A_ub, b_ub=self.b_ub, integrality=1)
+            result = linprog(
+                self.c,
+                A_eq=self.A,
+                b_eq=self.b,
+                A_ub=self.A_ub,
+                b_ub=self.b_ub,
+                integrality=1,
+            )
         except ValueError:
             raise ("Make sure you have the correct version of scipy")
 
         if not result.fun:
-            raise Exception("No possible solution for current data. \
-                            Check input data or reduce constraints")
+            raise Exception(
+                "No possible solution for current data. \
+                    Check input data or reduce constraints"
+            )
 
         if kwargs.get("verbose"):
             print(
@@ -166,7 +196,14 @@ class GroupMaker:
 
         # minimizing total pref
         self.c = np.concatenate([self.data_flat, [0] * (self.n_projects + 1)])
-        self.result = linprog(self.c, A_eq=self.A, b_eq=self.b, A_ub=self.A_ub, b_ub=self.b_ub, integrality=1)
+        self.result = linprog(
+            self.c,
+            A_eq=self.A,
+            b_eq=self.b,
+            A_ub=self.A_ub,
+            b_ub=self.b_ub,
+            integrality=1,
+        )
 
         if kwargs.get("verbose"):
             print(
@@ -196,17 +233,17 @@ class GroupMaker:
             .astype(int)
         )
 
-
-
     def groups(self):
-        """Displays the groups in a more readable format"""
+        """Displays the groups in a readable format"""
 
         if self.result_df.empty:
             raise Exception("Run the fit method first")
 
         students_df = self.data_df["student"]
         self.result_df = pd.concat([students_df, self.result_df], axis=1)
-        self.result_df.columns = self.data_df.drop(columns=["pitched", "lockout"]).columns
+        self.result_df.columns = self.data_df.drop(
+            columns=["pitched", "lockout"]
+        ).columns
         self.result_df.set_index("student", inplace=True)
 
         display_df = self.result_df[self.result_df != 0].stack().reset_index()
